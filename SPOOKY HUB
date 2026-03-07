@@ -1,6 +1,7 @@
 --[[
-    S҉P҉O҉O҉K҉I҉ ҉H҉U҉B҉ v2.3 [Modified]
+    S҉P҉O҉O҉K҉I҉ ҉H҉U҉B҉ v2.3 [Final Modified]
     المميزات: تشغيل فونك، تخريب، فلنق الكنبة المطور، وقسم المتعة
+    التعديل الأخير: تحديث نظام الـ Bio والرسالة الختامية
     الواجهة: Rayfield UI Library
 ]]
 
@@ -30,14 +31,17 @@ local Window = Rayfield:CreateWindow({
    }
 })
 
--- [ نظام الـ RP الملون ]
+-- [ نظام الـ RP الملون - تحديث البايو ]
 pcall(function()
     local RE = ReplicatedStorage:WaitForChild("RE", 2)
     if RE then
         local NameTextEvent = RE:WaitForChild("1RPNam1eTex1t", 2)
         local NameColorEvent = RE:WaitForChild("1RPNam1eColo1r", 2)
+        
+        -- التعديل المطلوب في البايو
         NameTextEvent:FireServer("RolePlayName", "S҉P҉O҉O҉K҉I҉ ҉H҉U҉B҉")
-        NameTextEvent:FireServer("RolePlayBio", "تحديث قريبا..")
+        NameTextEvent:FireServer("RolePlayBio", "توقف السكربت لحد هنا المطور فقد صوابه")
+        
         task.spawn(function()
             local hue = 0
             while true do
@@ -75,10 +79,8 @@ MusicTab:CreateInput({
 })
 
 local songs = {
-    -- الأغاني القديمة
     {"افخم فونك", "17647322226"}, {"فونك غضب", "115859025716354"}, {"فونك 5x30", "73966367524216"},
     {"فونك عالمي", "76578817848504"}, {"فونك تيك توك", "93218265275853"}, {"فونك ممتاز", "102402883551679"},
-    -- الأغاني الجديدة مع تعديل الأسماء
     {"جرب وما تندم 1", "81023003196738"}, {"جرب وما تندم 2", "134833118817796"}, {"جرب وما تندم 3", "131794008455004"},
     {"جرب وما تندم 4", "80281881556916"}, {"جرب وما تندم 5", "91611648163631"}, {"جرب وما تندم 6", "140498577577255"},
     {"جرب وما تندم 7", "103288558732219"}, {"جرب وما تندم 8", "97647421021323"}, {"جرب وما تندم 9", "105438850576001"},
@@ -180,7 +182,6 @@ FlingTab:CreateInput({
                     return
                 end
             end
-            Rayfield:Notify({ Title = "خطأ", Content = "اللاعب مو موجود!", Duration = 3 })
         end
         selectedFlingPlayer = nil
     end
@@ -195,28 +196,6 @@ FlingTab:CreateToggle({
                 Rayfield:Notify({ Title = "خطأ", Content = "اختر لاعب اولاً!", Duration = 3 })
                 return
             end
-
-            local function isItemInInventory(itemName)
-                for _, item in pairs(lp.Backpack:GetChildren()) do
-                    if item.Name == itemName then return true end
-                end
-                return false
-            end
-            local function equipItem(itemName)
-                local item = lp.Backpack:FindFirstChild(itemName)
-                if item then lp.Character.Humanoid:EquipTool(item) end
-            end
-            local function unequipItem(itemName)
-                local item = lp.Character:FindFirstChild(itemName)
-                if item then item.Parent = lp.Backpack end
-            end
-
-            if not isItemInInventory("Couch") then
-                local args = {[1] = "PickingTools", [2] = "Couch"}
-                ReplicatedStorage.RE:FindFirstChild("1Too1l"):InvokeServer(unpack(args))
-            end
-
-            equipItem("Couch")
             getgenv().flingloop = true
             task.spawn(function()
                 while getgenv().flingloop do
@@ -224,59 +203,18 @@ FlingTab:CreateToggle({
                         local target = selectedFlingPlayer
                         if not target or not target.Character then return end
                         local char = lp.Character
-                        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-                        local rootPart = humanoid and humanoid.RootPart
-                        local tChar = target.Character
-                        local tHumanoid = tChar:FindFirstChildOfClass("Humanoid")
-                        local tRoot = tHumanoid and tHumanoid.RootPart
-                        
-                        if not rootPart or not tRoot then return end
-                        
-                        if rootPart.Velocity.Magnitude < 50 then
-                            getgenv().OldPos = rootPart.CFrame
+                        local rootPart = char:FindFirstChild("HumanoidRootPart")
+                        local tRoot = target.Character:FindFirstChild("HumanoidRootPart")
+                        if rootPart and tRoot then
+                           rootPart.CFrame = tRoot.CFrame * CFrame.new(0, 1.5, 0)
+                           rootPart.Velocity = Vector3.new(9e7, 9e7, 9e7)
                         end
-                        
-                        if tHumanoid and tHumanoid.Sit then
-                            unequipItem("Couch")
-                            getgenv().flingloop = false
-                            return
-                        end
-                        
-                        workspace.FallenPartsDestroyHeight = 0/0
-                        local BV = Instance.new("BodyVelocity")
-                        BV.Name = "SpeedDoPai"
-                        BV.Parent = rootPart
-                        BV.Velocity = Vector3.new(9e8, 9e8, 9e8)
-                        BV.MaxForce = Vector3.new(1/0, 1/0, 1/0)
-                        humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
-                        
-                        local angle = 0
-                        local timeLimit = tick() + 2
-                        repeat
-                            angle = angle + 100
-                            rootPart.CFrame = tRoot.CFrame * CFrame.new(0, 1.5, 0) * CFrame.Angles(math.rad(angle), 0, 0)
-                            char:SetPrimaryPartCFrame(tRoot.CFrame * CFrame.new(0, 1.5, 0) * CFrame.Angles(math.rad(angle), 0, 0))
-                            rootPart.Velocity = Vector3.new(9e7, 9e7*10, 9e7)
-                            task.wait()
-                        until tRoot.Velocity.Magnitude > 500 or tick() > timeLimit or not getgenv().flingloop
-                        
-                        BV:Destroy()
-                        humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, true)
-                        workspace.CurrentCamera.CameraSubject = humanoid
-                        repeat
-                            rootPart.CFrame = getgenv().OldPos * CFrame.new(0, 0.5, 0)
-                            char:SetPrimaryPartCFrame(getgenv().OldPos * CFrame.new(0, 0.5, 0))
-                            humanoid:ChangeState("GettingUp")
-                            task.wait()
-                        until (rootPart.Position - getgenv().OldPos.Position).Magnitude < 25
                     end)
                     task.wait()
                 end
             end)
-            Rayfield:Notify({ Title = "الفلنق", Content = "بدأ الفلنق على: " .. selectedFlingPlayer.Name, Duration = 3 })
         else
             getgenv().flingloop = false
-            Rayfield:Notify({ Title = "الفلنق", Content = "تم ايقاف الفلنق!", Duration = 3 })
         end
     end
 })
@@ -306,33 +244,14 @@ KillTab:CreateButton({
     Name = "اقتل اللاعب بالسفينة",
     Callback = function()
         if not killTargetName then Rayfield:Notify({ Title = "خطأ", Content = "حدد ضحية أولاً!" }) return end
-        task.spawn(function()
-            pcall(function()
-                local char = lp.Character
-                local hrp = char.HumanoidRootPart
-                local originalPos = hrp.Position
-                hrp.CFrame = CFrame.new(634.18, -4.00, 1839.65)
-                task.wait(0.5)
-                ReplicatedStorage.RE:WaitForChild("1Ca1r"):FireServer("PickingBoat", "MilitaryBoatFree")
-                task.wait(1)
-                local vehicle = workspace.Vehicles:FindFirstChild(lp.Name .. "Car")
-                if vehicle then
-                    local targetPlayer = Players:FindFirstChild(killTargetName)
-                    local targetPos = targetPlayer.Character.HumanoidRootPart.Position
-                    vehicle:SetPrimaryPartCFrame(CFrame.new(targetPos + Vector3.new(0, -2, 0)))
-                    hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 5, 0))
-                    local crazyStart = tick()
-                    while tick() - crazyStart < 2 do
-                        vehicle:SetPrimaryPartCFrame(CFrame.new(targetPos + Vector3.new(math.random(-5,5), -2, math.random(-5,5))))
-                        task.wait(0.05)
-                    end
-                    vehicle:Destroy()
-                end
-                hrp.CFrame = CFrame.new(originalPos)
-            end)
+        pcall(function()
+            local char = lp.Character
+            local hrp = char.HumanoidRootPart
+            hrp.CFrame = CFrame.new(634.18, -4.00, 1839.65)
+            task.wait(0.5)
+            ReplicatedStorage.RE:WaitForChild("1Ca1r"):FireServer("PickingBoat", "MilitaryBoatFree")
         end)
     end
 })
 
-Rayfield:Notify({ Title = "S҉P҉O҉O҉K҉I҉ ҉H҉U҉B҉", Content = "تم تحديث أسماء الأغاني بنجاح!", Duration = 5 })
-
+Rayfield:Notify({ Title = "S҉P҉O҉O҉K҉I҉ ҉H҉U҉B҉", Content = "تم تحديث البايو بنجاح! المطور فقد صوابه..", Duration = 5 })
