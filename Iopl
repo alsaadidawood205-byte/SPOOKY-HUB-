@@ -1,0 +1,1632 @@
+--[[
+رسالة من sedentoporblood (stephenofc)
+
+في الماضي كنت أعاني أيضًا مع لوليتا (كانت تكرهني تقريبًا)
+لكن هذا لا يلغي ما فعله زيرونيس، ما فعله كان خطأ ويستحق العواقب
+لحسن الحظ أن بيانات لوليتا التي تسربت في أكتوبر/نوفمبر لم تصل إليه، لأنه بالتأكيد كان سيفعل الأسوأ بها!!!!!
+لوليتا إذا كنت تقرئين هذا أريد أن أعتذر عما فعلته في الماضي (كان بيننا سوء تفاهم وكل شيء)، منذ أن تم تسريب بياناتي في SHNmax لم أعد كما كنت والآن لا أثق كثيرًا في الآخرين.
+
+بواسطة: stephenofc
+]]
+
+-- ========== تحميل المكتبة ==========
+local Libary = loadstring(game:HttpGet("https://raw.githubusercontent.com/BRENOPOOF/slapola/refs/heads/main/Main.txt"))()
+workspace.FallenPartsDestroyHeight = -math.huge
+
+-- ========== تغيير اسم RP ==========
+pcall(function()
+    local RE = game:GetService("ReplicatedStorage"):WaitForChild("RE", 2)
+    if RE then
+        local NameTextEvent = RE:WaitForChild("1RPNam1eTex1t", 2)
+        local NameColorEvent = RE:WaitForChild("1RPNam1eColo1r", 2)
+        
+        local function fireEvent(event, ...)
+            if event then event:FireServer(...) end
+        end
+        
+        fireEvent(NameTextEvent, "RolePlayName", "سہكہربہتہ ابہو سہودا")
+        fireEvent(NameTextEvent, "RolePlayBio", "آلُـِـِِـِِِـِِـِـمـْـْْـْطُـٌـٌٌـٌوُر نـِِـِـوُحـًـًًـًًًـًًـًـ")
+        
+        task.spawn(function()
+            local hue = 0
+            while true do
+                hue = (hue + 0.01) % 1
+                local color = Color3.fromHSV(hue, 1, 1)
+                pcall(function()
+                    fireEvent(NameColorEvent, "PickingRPNameColor", color)
+                    fireEvent(NameColorEvent, "PickingRPBioColor", color)
+                end)
+                task.wait(0.05)
+            end
+        end)
+    end
+end)
+
+-- ========== شاشة التحميل ==========
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+local LoadingConfig = {
+    Duration = 8,
+    FadeOutTime = 1.5,
+    BarColor = Color3.fromRGB(255, 255, 255),
+    BarGlow = Color3.fromRGB(200, 200, 200),
+    BackgroundColor = Color3.fromRGB(0, 0, 0),
+    TextColor = Color3.fromRGB(255, 255, 255),
+    ParticleCount = 150,
+    ParticleSpeed = 2,
+    ParticleSize = 3,
+    MusicID = 79120642849019,
+    MusicVolume = 0.5,
+    PlayMusic = true
+}
+
+local LoadingElements = {
+    "بدء النظام...",
+    "تحميل الواجهة...",
+    "انضم إلى ديسكوردنا..",
+    "Join our Discord..",
+    "تحميل السكربتات...",
+    "تحسين الأداء...",
+    "شكراً للتشغيل...",
+    "إنهاء التحميل...",
+    "جاهز للاستخدام!"
+}
+
+local Particles = {}
+local AnimationConnections = {}
+local LoadingMusic = nil
+
+local function CreateLoadingMusic()
+    if not LoadingConfig.PlayMusic then return nil end
+    local sound = Instance.new("Sound")
+    sound.Name = "LoadingMusic"
+    sound.SoundId = "rbxassetid://" .. LoadingConfig.MusicID
+    sound.Volume = LoadingConfig.MusicVolume
+    sound.Looped = true
+    sound.Parent = game:GetService("SoundService")
+    sound:Play()
+    LoadingMusic = sound
+    return sound
+end
+
+local function FadeOutMusic(duration)
+    if LoadingMusic then
+        local fadeInfo = TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local fadeTween = TweenService:Create(LoadingMusic, fadeInfo, {Volume = 0})
+        fadeTween:Play()
+        fadeTween.Completed:Connect(function()
+            if LoadingMusic then
+                LoadingMusic:Stop()
+                LoadingMusic:Destroy()
+                LoadingMusic = nil
+            end
+        end)
+    end
+end
+
+local function CreateStarParticle(parent, x, y)
+    local star = Instance.new("Frame")
+    star.Name = "StarParticle"
+    star.Parent = parent
+    star.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+    star.BorderSizePixel = 0
+    star.Size = UDim2.new(0, math.random(2, LoadingConfig.ParticleSize), 0, math.random(2, LoadingConfig.ParticleSize))
+    star.Position = UDim2.new(0, x, 0, y)
+    star.ZIndex = 8
+    star.BackgroundTransparency = math.random(0, 50) / 100
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(1, 0)
+    corner.Parent = star
+    local gradient = Instance.new("UIGradient")
+    gradient.Parent = star
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(150, 150, 150)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+    })
+    local particle = {
+        frame = star,
+        speedX = (math.random(-100, 100) / 100) * LoadingConfig.ParticleSpeed,
+        speedY = (math.random(-100, 100) / 100) * LoadingConfig.ParticleSpeed,
+        rotationSpeed = math.random(-5, 5),
+        pulseSpeed = math.random(1, 3),
+        opacity = math.random(30, 100) / 100
+    }
+    return particle
+end
+
+local function CreateParticleSystem(parent)
+    local screenSize = workspace.CurrentCamera.ViewportSize
+    for i = 1, LoadingConfig.ParticleCount do
+        local x = math.random(0, screenSize.X)
+        local y = math.random(0, screenSize.Y)
+        local particle = CreateStarParticle(parent, x, y)
+        table.insert(Particles, particle)
+    end
+end
+
+local function UpdateParticles(parentFrame)
+    local screenSize = workspace.CurrentCamera.ViewportSize
+    for _, particle in pairs(Particles) do
+        if particle.frame and particle.frame.Parent then
+            local currentPos = particle.frame.Position
+            local newX = currentPos.X.Offset + particle.speedX
+            local newY = currentPos.Y.Offset + particle.speedY
+            if newX < -10 then
+                newX = screenSize.X + 10
+            elseif newX > screenSize.X + 10 then
+                newX = -10
+            end
+            if newY < -10 then
+                newY = screenSize.Y + 10
+            elseif newY > screenSize.Y + 10 then
+                newY = -10
+            end
+            particle.frame.Position = UDim2.new(0, newX, 0, newY)
+            particle.frame.Rotation = particle.frame.Rotation + particle.rotationSpeed
+            local pulseValue = math.sin(tick() * particle.pulseSpeed) * 0.3 + 0.7
+            particle.frame.BackgroundTransparency = 1 - (particle.opacity * pulseValue)
+            local sizeMultiplier = 1 + (math.sin(tick() * particle.pulseSpeed * 0.5) * 0.2)
+            particle.frame.Size = UDim2.new(0, LoadingConfig.ParticleSize * sizeMultiplier, 0, LoadingConfig.ParticleSize * sizeMultiplier)
+        end
+    end
+end
+
+local function CreateAdvancedBackground(parent)
+    local bgFrame = Instance.new("Frame")
+    bgFrame.Name = "AdvancedBackground"
+    bgFrame.Parent = parent
+    bgFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    bgFrame.BorderSizePixel = 0
+    bgFrame.Size = UDim2.new(1, 0, 1, 0)
+    bgFrame.Position = UDim2.new(0, 0, 0, 0)
+    bgFrame.ZIndex = 1
+    local gradient1 = Instance.new("UIGradient")
+    gradient1.Parent = bgFrame
+    gradient1.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(10, 10, 10)),
+        ColorSequenceKeypoint.new(0.3, Color3.fromRGB(0, 0, 0)),
+        ColorSequenceKeypoint.new(0.7, Color3.fromRGB(15, 15, 15)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+    })
+    gradient1.Rotation = 45
+    local animateGradient = TweenService:Create(
+        gradient1,
+        TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        {Rotation = 225}
+    )
+    animateGradient:Play()
+    table.insert(AnimationConnections, animateGradient)
+    local overlay = Instance.new("Frame")
+    overlay.Name = "Overlay"
+    overlay.Parent = bgFrame
+    overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    overlay.BorderSizePixel = 0
+    overlay.Size = UDim2.new(1, 0, 1, 0)
+    overlay.Position = UDim2.new(0, 0, 0, 0)
+    overlay.ZIndex = 2
+    overlay.BackgroundTransparency = 0.3
+    local overlayGradient = Instance.new("UIGradient")
+    overlayGradient.Parent = overlay
+    overlayGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 20, 20)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 0, 0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 25, 25))
+    })
+    overlayGradient.Rotation = -45
+    local animateOverlay = TweenService:Create(
+        overlayGradient,
+        TweenInfo.new(6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        {Rotation = 315}
+    )
+    animateOverlay:Play()
+    table.insert(AnimationConnections, animateOverlay)
+    return bgFrame
+end
+
+local function CreatePulsingCircles(parent)
+    for i = 1, 5 do
+        local circle = Instance.new("Frame")
+        circle.Name = "PulsingCircle" .. i
+        circle.Parent = parent
+        circle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        circle.BorderSizePixel = 0
+        circle.Size = UDim2.new(0, 100 + (i * 50), 0, 100 + (i * 50))
+        circle.Position = UDim2.new(0.5, -(50 + (i * 25)), 0.5, -(50 + (i * 25)))
+        circle.ZIndex = 3
+        circle.BackgroundTransparency = 0.9 + (i * 0.01)
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(1, 0)
+        corner.Parent = circle
+        local pulseTween = TweenService:Create(
+            circle,
+            TweenInfo.new(2 + (i * 0.3), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+            {
+                Size = UDim2.new(0, 120 + (i * 60), 0, 120 + (i * 60)),
+                Position = UDim2.new(0.5, -(60 + (i * 30)), 0.5, -(60 + (i * 30))),
+                BackgroundTransparency = 0.97
+            }
+        )
+        pulseTween:Play()
+        table.insert(AnimationConnections, pulseTween)
+    end
+end
+
+local function CreateLoadingScreen()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "PremiumLoadingScreen"
+    ScreenGui.Parent = PlayerGui
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.ScreenInsets = Enum.ScreenInsets.None
+    ScreenGui.IgnoreGuiInset = true
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Parent = ScreenGui
+    MainFrame.BackgroundColor3 = LoadingConfig.BackgroundColor
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Size = UDim2.new(1, 0, 1, 0)
+    MainFrame.Position = UDim2.new(0, 0, 0, 0)
+    MainFrame.ZIndex = 10
+    local advancedBg = CreateAdvancedBackground(MainFrame)
+    CreatePulsingCircles(MainFrame)
+    CreateParticleSystem(MainFrame)
+    local CenterContainer = Instance.new("Frame")
+    CenterContainer.Name = "CenterContainer"
+    CenterContainer.Parent = MainFrame
+    CenterContainer.BackgroundTransparency = 1
+    CenterContainer.Size = UDim2.new(0, 600, 0, 400)
+    CenterContainer.Position = UDim2.new(0.5, -300, 0.5, -200)
+    CenterContainer.ZIndex = 11
+    local TitleLabel = Instance.new("TextLabel")
+    TitleLabel.Name = "TitleLabel"
+    TitleLabel.Parent = CenterContainer
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.Size = UDim2.new(1, 0, 0, 80)
+    TitleLabel.Position = UDim2.new(0, 0, 0, 0)
+    TitleLabel.Text = "سہكہربہتہ ابہو سہودا"
+    TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TitleLabel.TextScaled = true
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.ZIndex = 12
+    local titleStroke = Instance.new("UIStroke")
+    titleStroke.Parent = TitleLabel
+    titleStroke.Color = Color3.fromRGB(200, 200, 200)
+    titleStroke.Thickness = 2
+    titleStroke.Transparency = 0.5
+    local TitleGradient = Instance.new("UIGradient")
+    TitleGradient.Parent = TitleLabel
+    TitleGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 180, 180)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 180, 180))
+    })
+    local titleAnimation = TweenService:Create(
+        TitleGradient,
+        TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        {Offset = Vector2.new(2, 0)}
+    )
+    titleAnimation:Play()
+    table.insert(AnimationConnections, titleAnimation)
+    local glowTween = TweenService:Create(
+        titleStroke,
+        TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        {Transparency = 0.1}
+    )
+    glowTween:Play()
+    table.insert(AnimationConnections, glowTween)
+    local SubtitleLabel = Instance.new("TextLabel")
+    SubtitleLabel.Name = "SubtitleLabel"
+    SubtitleLabel.Parent = CenterContainer
+    SubtitleLabel.BackgroundTransparency = 1
+    SubtitleLabel.Size = UDim2.new(1, 0, 0, 40)
+    SubtitleLabel.Position = UDim2.new(0, 0, 0, 90)
+    SubtitleLabel.Text = "المطور : آلُـِـِِـِِِـِِـِـمـْـْْـْطُـٌـٌٌـٌوُر نـِِـِـوُحـًـًًـًًًـًًـًـ"
+    SubtitleLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    SubtitleLabel.TextScaled = true
+    SubtitleLabel.Font = Enum.Font.Gotham
+    SubtitleLabel.ZIndex = 12
+    local ProgressContainer = Instance.new("Frame")
+    ProgressContainer.Name = "ProgressContainer"
+    ProgressContainer.Parent = CenterContainer
+    ProgressContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    ProgressContainer.BorderSizePixel = 0
+    ProgressContainer.Size = UDim2.new(1, 0, 0, 25)
+    ProgressContainer.Position = UDim2.new(0, 0, 0, 160)
+    ProgressContainer.ZIndex = 12
+    local ProgressCorner = Instance.new("UICorner")
+    ProgressCorner.CornerRadius = UDim.new(0, 12)
+    ProgressCorner.Parent = ProgressContainer
+    local ProgressStroke = Instance.new("UIStroke")
+    ProgressStroke.Parent = ProgressContainer
+    ProgressStroke.Color = Color3.fromRGB(200, 200, 200)
+    ProgressStroke.Thickness = 2
+    ProgressStroke.Transparency = 0.3
+    local strokePulse = TweenService:Create(
+        ProgressStroke,
+        TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        {Transparency = 0.1}
+    )
+    strokePulse:Play()
+    table.insert(AnimationConnections, strokePulse)
+    local ProgressBar = Instance.new("Frame")
+    ProgressBar.Name = "ProgressBar"
+    ProgressBar.Parent = ProgressContainer
+    ProgressBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    ProgressBar.BorderSizePixel = 0
+    ProgressBar.Size = UDim2.new(0, 0, 1, 0)
+    ProgressBar.Position = UDim2.new(0, 0, 0, 0)
+    ProgressBar.ZIndex = 13
+    local BarCorner = Instance.new("UICorner")
+    BarCorner.CornerRadius = UDim.new(0, 12)
+    BarCorner.Parent = ProgressBar
+    local BarGradient = Instance.new("UIGradient")
+    BarGradient.Parent = ProgressBar
+    BarGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(180, 180, 180)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 180, 180))
+    })
+    local barGradientAnim = TweenService:Create(
+        BarGradient,
+        TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        {Offset = Vector2.new(1, 0)}
+    )
+    barGradientAnim:Play()
+    table.insert(AnimationConnections, barGradientAnim)
+    local GlowEffect = Instance.new("Frame")
+    GlowEffect.Name = "GlowEffect"
+    GlowEffect.Parent = ProgressBar
+    GlowEffect.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    GlowEffect.BackgroundTransparency = 0.6
+    GlowEffect.BorderSizePixel = 0
+    GlowEffect.Size = UDim2.new(0, 60, 1, 0)
+    GlowEffect.Position = UDim2.new(-0.2, 0, 0, 0)
+    GlowEffect.ZIndex = 14
+    local GlowCorner = Instance.new("UICorner")
+    GlowCorner.CornerRadius = UDim.new(0, 12)
+    GlowCorner.Parent = GlowEffect
+    local PercentageLabel = Instance.new("TextLabel")
+    PercentageLabel.Name = "PercentageLabel"
+    PercentageLabel.Parent = CenterContainer
+    PercentageLabel.BackgroundTransparency = 1
+    PercentageLabel.Size = UDim2.new(1, 0, 0, 40)
+    PercentageLabel.Position = UDim2.new(0, 0, 0, 200)
+    PercentageLabel.Text = "0%"
+    PercentageLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    PercentageLabel.TextScaled = true
+    PercentageLabel.Font = Enum.Font.GothamBold
+    PercentageLabel.ZIndex = 12
+    local StatusLabel = Instance.new("TextLabel")
+    StatusLabel.Name = "StatusLabel"
+    StatusLabel.Parent = CenterContainer
+    StatusLabel.BackgroundTransparency = 1
+    StatusLabel.Size = UDim2.new(1, 0, 0, 30)
+    StatusLabel.Position = UDim2.new(0, 0, 0, 250)
+    StatusLabel.Text = "جاري التحضير..."
+    StatusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    StatusLabel.TextScaled = true
+    StatusLabel.Font = Enum.Font.Gotham
+    StatusLabel.ZIndex = 12
+    local DotsLabel = Instance.new("TextLabel")
+    DotsLabel.Name = "DotsLabel"
+    DotsLabel.Parent = CenterContainer
+    DotsLabel.BackgroundTransparency = 1
+    DotsLabel.Size = UDim2.new(0, 60, 0, 30)
+    DotsLabel.Position = UDim2.new(1, -60, 0, 250)
+    DotsLabel.Text = ""
+    DotsLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    DotsLabel.TextScaled = true
+    DotsLabel.Font = Enum.Font.Gotham
+    DotsLabel.ZIndex = 12
+    return ScreenGui, ProgressBar, PercentageLabel, StatusLabel, DotsLabel, GlowEffect, MainFrame
+end
+
+local function AnimateDots(dotsLabel)
+    local dots = ""
+    local dotCount = 0
+    spawn(function()
+        while dotsLabel.Parent do
+            dotCount = (dotCount + 1) % 4
+            dots = string.rep(".", dotCount)
+            dotsLabel.Text = dots
+            wait(0.4)
+        end
+    end)
+end
+
+local function StartLoadingSequence()
+    CreateLoadingMusic()
+    local screenGui, progressBar, percentageLabel, statusLabel, dotsLabel, glowEffect, mainFrame = CreateLoadingScreen()
+    AnimateDots(dotsLabel)
+    local particleConnection = RunService.Heartbeat:Connect(function()
+        UpdateParticles(mainFrame)
+    end)
+    table.insert(AnimationConnections, particleConnection)
+    local glowTween = TweenService:Create(
+        glowEffect,
+        TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+        {Position = UDim2.new(1.3, 0, 0, 0)}
+    )
+    glowTween:Play()
+    table.insert(AnimationConnections, glowTween)
+    local startTime = tick()
+    local currentElementIndex = 1
+    local lastElementTime = startTime
+    local function updateProgress()
+        local elapsed = tick() - startTime
+        local progress = math.min(elapsed / LoadingConfig.Duration, 1)
+        local percentage = math.floor(progress * 100)
+        local barTween = TweenService:Create(
+            progressBar,
+            TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+            {Size = UDim2.new(progress, 0, 1, 0)}
+        )
+        barTween:Play()
+        local percentTween = TweenService:Create(
+            percentageLabel,
+            TweenInfo.new(0.1, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+            {TextColor3 = Color3.fromRGB(255, 255, 255)}
+        )
+        percentTween:Play()
+        percentageLabel.Text = percentage .. "%"
+        local elementTime = LoadingConfig.Duration / #LoadingElements
+        if tick() - lastElementTime >= elementTime and currentElementIndex <= #LoadingElements then
+            statusLabel.Text = LoadingElements[currentElementIndex]
+            local statusTween = TweenService:Create(
+                statusLabel,
+                TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+                {TextTransparency = 0}
+            )
+            statusTween:Play()
+            currentElementIndex = currentElementIndex + 1
+            lastElementTime = tick()
+        end
+        if progress >= 1 then
+            wait(0.8)
+            FadeOutMusic(LoadingConfig.FadeOutTime)
+            for _, connection in pairs(AnimationConnections) do
+                if typeof(connection) == "RBXScriptConnection" then
+                    connection:Disconnect()
+                elseif typeof(connection) == "Tween" then
+                    connection:Cancel()
+                end
+            end
+            for _, particle in pairs(Particles) do
+                if particle.frame then
+                    particle.frame:Destroy()
+                end
+            end
+            local fadeOutTween = TweenService:Create(
+                mainFrame,
+                TweenInfo.new(LoadingConfig.FadeOutTime, Enum.EasingStyle.Quart, Enum.EasingDirection.Out),
+                {
+                    BackgroundTransparency = 1,
+                    Size = UDim2.new(1.5, 0, 1.5, 0),
+                    Position = UDim2.new(-0.25, 0, -0.25, 0)
+                }
+            )
+            local contentFadeTween = TweenService:Create(
+                mainFrame.CenterContainer,
+                TweenInfo.new(LoadingConfig.FadeOutTime * 0.7, Enum.EasingStyle.Back, Enum.EasingDirection.In),
+                {
+                    Size = UDim2.new(0, 0, 0, 0),
+                    Position = UDim2.new(0.5, 0, 0.5, 0)
+                }
+            )
+            fadeOutTween:Play()
+            contentFadeTween:Play()
+            fadeOutTween.Completed:Connect(function()
+                screenGui:Destroy()
+            end)
+            return
+        end
+        RunService.Heartbeat:Wait()
+        updateProgress()
+    end
+    updateProgress()
+end
+
+StartLoadingSequence()
+
+-- ========== إنشاء النافذة الرئيسية ==========
+local Window = Libary:MakeWindow({
+    Title = "سہكہربہتہ ابہو سہودا",
+    SubTitle = "المطور : آلُـِـِِـِِِـِِـِـمـْـْْـْطُـٌـٌٌـٌوُر نـِِـِـوُحـًـًًـًًًـًًـًـ",
+    LoadText = "جاري تحميل السكربت",
+    Flags = "ZyronisHub"
+})
+
+-- إضافة صورة الخلفية
+local backgroundId = "rbxassetid://96954312451217"
+local screenGui = game.Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild("ZyronisHub")
+if screenGui then
+    local mainFrame = screenGui:FindFirstChildOfClass("Frame")
+    if mainFrame then
+        mainFrame.BackgroundImage = backgroundId
+        mainFrame.BackgroundImageLabel = nil
+    end
+end
+
+Window:AddMinimizeButton({
+    Button = {
+        Image = 'rbxassetid://76560659040388',
+        BackgroundTransparency = 0,
+        Size = UDim2.new(0, 35, 0, 35),
+    },
+    Corner = {
+        CornerRadius = UDim.new(0, 100),
+    },
+})
+
+-- ========== المتغيرات العامة ==========
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local cam = workspace.CurrentCamera
+
+-- ========== تبويب المعلومات ==========
+local InfoTab = Window:MakeTab({ Title = "معلومات", Icon = "rbxassetid://15309138473" })
+
+InfoTab:AddSection({ "معلومات السكربت" })
+InfoTab:AddParagraph({ "اسم السكربت:", "سہكہربہتہ ابہو سہودا" })
+InfoTab:AddParagraph({ "اسم المطور:", "آلُـِـِِـِِِـِِـِـمـْـْْـْطُـٌـٌٌـٌوُر نـِِـِـوُحـًـًًـًًًـًًـًـ" })
+
+InfoTab:AddSection({ "إعادة الانضمام" })
+InfoTab:AddButton({
+    Name = "إعادة الانضمام",
+    Callback = function()
+        local TeleportService = game:GetService("TeleportService")
+        TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
+    end
+})
+
+-- ========== تبويب اللاعب المحلي ==========
+local LocalPlayerTab = Window:MakeTab({ Title = "اللاعب المحلي", Icon = "user" })
+local speedSection = LocalPlayerTab:AddSection({ Name = "السرعة، الجاذبية والقفز" })
+
+LocalPlayerTab:AddTextBox({
+    Name = "سرعة اللاعب",
+    PlaceholderText = "أدخل السرعة",
+    Callback = function(v)
+        local speed = tonumber(v)
+        if speed and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.WalkSpeed = speed
+        end
+    end
+})
+LocalPlayerTab:AddButton({ Name = "إعادة ضبط السرعة", Callback = function() if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then LocalPlayer.Character.Humanoid.WalkSpeed = 16 end end })
+
+LocalPlayerTab:AddTextBox({
+    Name = "قوة القفز",
+    PlaceholderText = "أدخل ارتفاع القفز",
+    Callback = function(v)
+        local jump = tonumber(v)
+        if jump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid.JumpPower = jump
+        end
+    end
+})
+LocalPlayerTab:AddButton({ Name = "إعادة ضبط القفز", Callback = function() if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then LocalPlayer.Character.Humanoid.JumpPower = 50 end end })
+
+LocalPlayerTab:AddTextBox({
+    Name = "الجاذبية",
+    PlaceholderText = "أدخل الجاذبية",
+    Callback = function(v)
+        local g = tonumber(v)
+        if g then workspace.Gravity = g end
+    end
+})
+LocalPlayerTab:AddButton({ Name = "إعادة ضبط الجاذبية", Callback = function() workspace.Gravity = 196.2 end })
+
+local spamSection = LocalPlayerTab:AddSection({ Name = "تضخيم الدردشة" })
+local spamMessage, spamDelay, spamActive = "", 1, false
+local function sendchat(msg)
+    if not msg or msg == "" then return end
+    local tcs = game:GetService("TextChatService")
+    if tcs.ChatVersion == Enum.ChatVersion.LegacyChatService then
+        pcall(function() game:GetService("ReplicatedStorage"):FindFirstChild("DefaultChatSystemChatEvents").SayMessageRequest:FireServer(msg, "All") end)
+    else
+        local chat = tcs.ChatInputBarConfiguration and tcs.ChatInputBarConfiguration.TargetTextChannel
+        if chat then pcall(function() chat:SendAsync(msg) end) end
+    end
+end
+LocalPlayerTab:AddTextBox({ Name = "أدخل النص", PlaceholderText = "اكتب الرسالة", Callback = function(t) spamMessage = t end })
+LocalPlayerTab:AddButton({ Name = "إرسال الدردشة", Callback = function() sendchat(spamMessage) end })
+LocalPlayerTab:AddSlider({ Name = "تأخير التضخيم", Min = 0.4, Max = 10, Default = 1, Increment = 0.1, Callback = function(v) spamDelay = v end })
+LocalPlayerTab:AddToggle({ Name = "تضخيم الدردشة", Default = false, Callback = function(v)
+    spamActive = v
+    if v then
+        task.spawn(function() while spamActive do sendchat(spamMessage) task.wait(spamDelay) end end)
+    end
+end })
+LocalPlayerTab:AddButton({ Name = "تضخيم الدردشة (مخترق)", Callback = function()
+    if game:GetService("TextChatService").ChatVersion == Enum.ChatVersion.TextChatService then
+        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync("hi\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\rالخادم: تم اختراقه بواسطة Zyronis Hub")
+    end
+end })
+LocalPlayerTab:AddButton({ Name = "مسح الدردشة", Callback = function()
+    if game:GetService("TextChatService").ChatVersion == Enum.ChatVersion.TextChatService then
+        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync("hi\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\rالخادم: تم مسح الدردشة")
+    end
+end })
+
+local headsitSection = LocalPlayerTab:AddSection({ Name = "الجلوس على الرأس (حصان)" })
+local selectedHeadPlayer, headSitConnection = nil, nil
+local headSitDropdown = LocalPlayerTab:AddDropdown({ Name = "اختر لاعباً", Options = {}, Default = "", Callback = function(v) selectedHeadPlayer = v end })
+LocalPlayerTab:AddToggle({ Name = "الجلوس على الرأس (حصان)", Default = false, Callback = function(bool)
+    if not selectedHeadPlayer then warn("لم يتم اختيار لاعب") return end
+    local targetPlayer = game:GetService("Players"):FindFirstChild(selectedHeadPlayer)
+    if bool then
+        if targetPlayer and targetPlayer.Character then
+            local char = LocalPlayer.Character
+            local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+            local rootPart = char and char:FindFirstChild("HumanoidRootPart")
+            if humanoid and rootPart then
+                humanoid.Sit = true
+                if headSitConnection then headSitConnection:Disconnect() end
+                headSitConnection = RunService.Heartbeat:Connect(function()
+                    if targetPlayer.Character and targetPlayer.Character:FindFirstChild("Head") and humanoid.Sit then
+                        rootPart.CFrame = targetPlayer.Character.Head.CFrame * CFrame.new(0, 1.6, 0.4)
+                    else
+                        if headSitConnection then headSitConnection:Disconnect() headSitConnection = nil end
+                        humanoid.Sit = false
+                    end
+                end)
+            end
+        end
+    else
+        if headSitConnection then headSitConnection:Disconnect() headSitConnection = nil end
+        if LocalPlayer.Character then
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.Sit = false end
+        end
+    end
+end })
+LocalPlayerTab:AddButton({ Name = "تحديث قائمة اللاعبين", Callback = function()
+    local newList = {}
+    for _, plr in ipairs(game:GetService("Players"):GetPlayers()) do
+        if plr ~= LocalPlayer then table.insert(newList, plr.Name) end
+    end
+    if headSitDropdown then
+        pcall(function()
+            if headSitDropdown.SetOptions then headSitDropdown:SetOptions(newList)
+            elseif headSitDropdown.Set then headSitDropdown:Set(newList)
+            elseif headSitDropdown.Refresh then headSitDropdown:Refresh(newList) end
+        end)
+        if selectedHeadPlayer and not game:GetService("Players"):FindFirstChild(selectedHeadPlayer) then
+            selectedHeadPlayer = nil
+            pcall(function() if headSitDropdown.SetValue then headSitDropdown:SetValue("") end end)
+        end
+    end
+end })
+
+-- ========== تبويب حماية (مع مسح المنطقة) ==========
+local Tab13 = Window:MakeTab({"حماية", "rbxassetid://11322093465"})
+local Workspace = game:GetService("Workspace")
+
+local backupTables = { Vehicles = {}, Canoes = {}, Jets = {}, Helis = {}, Balls = {} }
+local TeleportCarro = {}
+function TeleportCarro:MostrarNotificacao(msg) print("🔔 "..msg) end
+
+local function AntiFlingLoop(name, getFolderFunc)
+    local active = false
+    task.spawn(function()
+        while true do
+            if active and LocalPlayer.Character then
+                local folder = getFolderFunc()
+                if folder then
+                    for _, item in ipairs(folder:GetChildren()) do
+                        local isMine = false
+                        if name == "Vehicles" then
+                            for _, seat in ipairs(item:GetDescendants()) do
+                                if (seat:IsA("VehicleSeat") or seat:IsA("Seat")) and seat.Occupant and seat.Occupant.Parent == LocalPlayer.Character then
+                                    isMine = true; break
+                                end
+                            end
+                        elseif name == "Canoes" then
+                            local owner = item:FindFirstChild("Owner")
+                            isMine = owner and owner.Value == LocalPlayer
+                        elseif name == "Jets" or name == "Helis" then
+                            isMine = item.Name == LocalPlayer.Name
+                        end
+                        if not isMine then
+                            table.insert(backupTables[name], item:Clone())
+                            item:Destroy()
+                        end
+                    end
+                end
+            end
+            task.wait(0.03)
+        end
+    end)
+    return function(state)
+        active = state
+        TeleportCarro:MostrarNotificacao(name.." "..(state and "نشط!" or "غير نشط!"))
+        if not state then
+            for _, item in ipairs(backupTables[name]) do
+                local parentFolder = getFolderFunc()
+                if parentFolder then item.Parent = parentFolder end
+            end
+            backupTables[name] = {}
+        end
+    end
+end
+
+Tab13:AddToggle({ Name = "منع تطيير الزوارق", Default = false, Callback = AntiFlingLoop("Canoes", function() local w = Workspace:FindFirstChild("WorkspaceCom") return w and w:FindFirstChild("001_CanoeStorage") end) })
+Tab13:AddToggle({ Name = "منع تطيير الطائرات", Default = false, Callback = AntiFlingLoop("Jets", function() local f = Workspace:FindFirstChild("WorkspaceCom") if f and f:FindFirstChild("001_Airport") then local st = f["001_Airport"]:FindFirstChild("AirportHanger") if st then return st:FindFirstChild("001_JetStorage") and st["001_JetStorage"]:FindFirstChild("JetAirport") end end end) })
+Tab13:AddToggle({ Name = "منع تطيير الهليكوبترات", Default = false, Callback = AntiFlingLoop("Helis", function() local f = Workspace:FindFirstChild("WorkspaceCom") return f and f:FindFirstChild("001_HeliStorage") and f["001_HeliStorage"]:FindFirstChild("PoliceStationHeli") end) })
+Tab13:AddToggle({ Name = "منع تطيير الكرة", Default = false, Callback = AntiFlingLoop("Balls", function() local f = Workspace:FindFirstChild("WorkspaceCom") return f and f:FindFirstChild("001_SoccerBalls") end) })
+
+local antiSitActive = false
+Tab13:AddToggle({ Name = "منع الجلوس", Default = false, Callback = function(state)
+    antiSitActive = state
+    TeleportCarro:MostrarNotificacao("منع الجلوس "..(state and "نشط!" or "غير نشط!"))
+    task.spawn(function()
+        while antiSitActive and LocalPlayer.Character do
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum:SetStateEnabled(Enum.HumanoidStateType.Seated, false)
+                if hum:GetState() == Enum.HumanoidStateType.Seated then hum:ChangeState(Enum.HumanoidStateType.GettingUp) end
+            end
+            task.wait(0.05)
+        end
+        if not antiSitActive then
+            local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum:SetStateEnabled(Enum.HumanoidStateType.Seated, true) end
+        end
+    end)
+end })
+
+Tab13:AddToggle({ Name = "تقليل الـ Lag", Default = false, Callback = function(state)
+    local Players = game:GetService("Players")
+    local dedupLock = {}
+    local IGNORED_PLAYER
+    if not state then return end
+    local function marcarIgnorado(p) IGNORED_PLAYER = p end
+    local function isTargetTool(inst) return inst:IsA("Tool") end
+    local function gatherTools(p)
+        local found = {}
+        local containers = {}
+        if p.Character then table.insert(containers, p.Character) end
+        local backpack = p:FindFirstChildOfClass("Backpack")
+        if backpack then table.insert(containers, backpack) end
+        local sg = p:FindFirstChild("StarterGear")
+        if sg then table.insert(containers, sg) end
+        for _, c in ipairs(containers) do
+            for _, ch in ipairs(c:GetChildren()) do
+                if isTargetTool(ch) then table.insert(found, ch) end
+            end
+        end
+        return found
+    end
+    local function dedupePlayer(p)
+        if p == IGNORED_PLAYER then return end
+        if dedupLock[p] then return end
+        dedupLock[p] = true
+        local tools = gatherTools(p)
+        if #tools > 1 then for i=2,#tools do pcall(function() tools[i]:Destroy() end) end end
+        dedupLock[p] = false
+    end
+    local function hookPlayer(p)
+        if not IGNORED_PLAYER then marcarIgnorado(p) end
+        task.defer(dedupePlayer, p)
+        local function setupChar(char)
+            task.delay(0.5, function() dedupePlayer(p) end)
+            char.ChildAdded:Connect(function(child)
+                if isTargetTool(child) then task.delay(0.1, function() dedupePlayer(p) end) end
+            end)
+        end
+        if p.Character then setupChar(p.Character) end
+        p.CharacterAdded:Connect(setupChar)
+        local backpack = p:WaitForChild("Backpack", 10)
+        if backpack then
+            backpack.ChildAdded:Connect(function(child)
+                if isTargetTool(child) then task.delay(0.1, function() dedupePlayer(p) end) end
+            end)
+        end
+        local sg = p:FindFirstChild("StarterGear") or p:WaitForChild("StarterGear", 10)
+        if sg then
+            sg.ChildAdded:Connect(function(child)
+                if isTargetTool(child) then task.delay(0.1, function() dedupePlayer(p) end) end
+            end)
+        end
+    end
+    Players.PlayerAdded:Connect(hookPlayer)
+    for _, plr in ipairs(Players:GetPlayers()) do hookPlayer(plr) end
+    task.spawn(function() while state do for _, plr in ipairs(Players:GetPlayers()) do dedupePlayer(plr) end task.wait(2) end end)
+end })
+
+-- الحماية من البانق
+local antiBangActive = false
+local antiBangLastPos = nil
+local antiBangPart = nil
+local antiBangVelConn = nil
+local function antiBangEnable()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    antiBangLastPos = hrp.Position
+    antiBangPart = Instance.new("Part")
+    antiBangPart.Size = Vector3.new(4,1,4)
+    antiBangPart.Position = antiBangLastPos
+    antiBangPart.Anchored = true
+    antiBangPart.CanCollide = false
+    antiBangPart.Transparency = 0.5
+    antiBangPart.Name = "Gaze"
+    antiBangPart.Parent = workspace
+    workspace.CurrentCamera.CameraSubject = antiBangPart
+    workspace.FallenPartsDestroyHeight = -1000
+    local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(905, -500, 0)})
+    tween:Play()
+    tween.Completed:Wait()
+    antiBangVelConn = RunService.Heartbeat:Connect(function() if hrp then hrp.Velocity = Vector3.new(0,0,0) end end)
+end
+local function antiBangDisable()
+    local char = LocalPlayer.Character
+    if not char or not antiBangLastPos then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+    if antiBangVelConn then antiBangVelConn:Disconnect() antiBangVelConn = nil end
+    local tweenInfo = TweenInfo.new(0.1, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(antiBangLastPos)})
+    tween:Play()
+    tween.Completed:Wait()
+    if LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then workspace.CurrentCamera.CameraSubject = hum end
+    end
+    if antiBangPart then antiBangPart:Destroy() antiBangPart = nil end
+    workspace.FallenPartsDestroyHeight = -500
+end
+Tab13:AddToggle({ Name = "الحماية من البانق", Description = "ينقلك إلى موقع آمن ويمنع السرعة لحمايتك من التطيير", Default = false, Callback = function(state) if state then antiBangEnable() else antiBangDisable() end end })
+
+-- مسح المنطقة
+local ClearAreaEnabled = false
+local ClearAreaOriginalPos = nil
+local ClearAreaPhysics = nil
+local ClearAreaThread = nil
+
+Tab13:AddToggle({
+    Name = "مسح المنطقه 🌪️",
+    Default = false,
+    Callback = function(Value)
+        ClearAreaEnabled = Value
+        local lp = LocalPlayer
+        local char = lp.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        
+        if ClearAreaEnabled then
+            if not hrp then return end
+            ClearAreaOriginalPos = hrp.CFrame
+            if hum then hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false) end
+            
+            ClearAreaPhysics = RunService.Heartbeat:Connect(function()
+                if not ClearAreaEnabled then return end
+                hrp.Velocity = Vector3.new(50000, 50000, 50000)
+                hrp.RotVelocity = Vector3.new(50000, 50000, 50000)
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end)
+            
+            ClearAreaThread = task.spawn(function()
+                local angle = 0
+                while ClearAreaEnabled do
+                    angle = angle + 5
+                    local radius = math.random(500, 2000)
+                    hrp.CFrame = ClearAreaOriginalPos * CFrame.new(
+                        math.sin(angle) * radius,
+                        math.random(20, 1000),
+                        math.cos(angle) * radius
+                    ) * CFrame.Angles(math.random(), math.random(), math.random())
+                    task.wait(0.005)
+                end
+            end)
+        else
+            if ClearAreaPhysics then ClearAreaPhysics:Disconnect(); ClearAreaPhysics = nil end
+            if ClearAreaThread then task.cancel(ClearAreaThread); ClearAreaThread = nil end
+            if char then
+                for _, part in pairs(char:GetChildren()) do
+                    if part:IsA("BasePart") then part.CanCollide = true end
+                end
+            end
+            task.wait(0.05)
+            if hrp and ClearAreaOriginalPos then
+                hrp.Velocity = Vector3.new(0,0,0); hrp.RotVelocity = Vector3.new(0,0,0)
+                hrp.CFrame = ClearAreaOriginalPos * CFrame.new(0, 3, 0)
+            end
+            if hum then hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true); hum.Sit = false end
+        end
+    end
+})
+
+-- ========== تبويب أغاني الفونك ==========
+local MusicTab = Window:MakeTab({ Title = "اغاني الفونك", Icon = "rbxassetid://4483362458" })
+
+local function playMusic(soundId)
+    if not soundId or soundId == "" then return end
+    pcall(function()
+        local args1 = { [1] = "SkateBoard" }
+        game:GetService("ReplicatedStorage").RE:FindFirstChild("1NoMoto1rVehicle1s"):FireServer(unpack(args1))
+        task.wait(0.3)
+        local args2 = { [1] = "PickingScooterMusicText", [2] = soundId }
+        game:GetService("ReplicatedStorage").RE:FindFirstChild("1NoMoto1rVehicle1s"):FireServer(unpack(args2))
+        print("[Music] تم تشغيل الأغنية: " .. soundId)
+    end)
+end
+
+MusicTab:AddSection({ "أدخل كود الأغنية" })
+MusicTab:AddTextBox({
+    Name = "أدخل الكود",
+    PlaceholderText = "هنا",
+    Callback = function(value)
+        if value and value ~= "" then
+            playMusic(value)
+            print("[Music] جاري تشغيل الأغنية: " .. value)
+        end
+    end
+})
+
+MusicTab:AddSection({ "أغاني فونك جاهزة" })
+MusicTab:AddButton({ Name = "حلوة 1", Callback = function() playMusic("98313375960954") end })
+MusicTab:AddButton({ Name = "حلوة 2", Callback = function() playMusic("136909019669593") end })
+MusicTab:AddButton({ Name = "حلوة 3", Callback = function() playMusic("130012558337510") end })
+MusicTab:AddButton({ Name = "حلوة 4", Callback = function() playMusic("97647421021323") end })
+MusicTab:AddButton({ Name = "حلوة 5", Callback = function() playMusic("80281881556916") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 1", Callback = function() playMusic("91138951626248") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 2", Callback = function() playMusic("83309655997452") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 3", Callback = function() playMusic("81023003196738") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 4", Callback = function() playMusic("102655780019271") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 5", Callback = function() playMusic("103288558732219") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 6", Callback = function() playMusic("127491720343331") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 7", Callback = function() playMusic("134833118817796") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 8", Callback = function() playMusic("112355709978731") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 9", Callback = function() playMusic("140498577577255") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 10", Callback = function() playMusic("128146983730820") end })
+MusicTab:AddButton({ Name = "سب 1", Callback = function() playMusic("134954359122953") end })
+MusicTab:AddButton({ Name = "سب 2", Callback = function() playMusic("94943308357738") end })
+MusicTab:AddButton({ Name = "سب 3", Callback = function() playMusic("91611648163631") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 11", Callback = function() playMusic("89535137402880") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 12", Callback = function() playMusic("72369698229901") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 13", Callback = function() playMusic("127840997774724") end })
+MusicTab:AddButton({ Name = "جرب وما تندم 14", Callback = function() playMusic("78460453053256") end })
+
+-- ========== تبويب قتل بالسفينة ==========
+local KillTab = Window:MakeTab({ Title = "قتل", Icon = "rbxassetid://4483362458" })
+
+local function Notify(title, content, duration)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = title,
+        Text = content,
+        Duration = duration or 3
+    })
+end
+
+local killTarget = nil
+
+KillTab:AddSection({ "قتل بالسفينة" })
+
+KillTab:AddTextBox({
+    Name = "اكتب اسم الضحية",
+    PlaceholderText = "اكتب الاسم هنا...",
+    Callback = function(text)
+        local searchText = text:lower()
+        if #searchText >= 1 then
+            for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+                if p.Name:lower():find(searchText) and p ~= LocalPlayer then
+                    killTarget = p.Name
+                    Notify("القتل", "تم تحديد: " .. p.Name, 3)
+                    return
+                end
+            end
+            Notify("خطأ", "اللاعب مو موجود!", 3)
+        end
+        killTarget = nil
+    end
+})
+
+KillTab:AddButton({
+    Name = "اقتل اللاعب بالسفينة",
+    Callback = function()
+        if not killTarget then
+            Notify("خطأ", "اكتب اسم الضحية اولاً!", 3)
+            return
+        end
+
+        Notify("القتل", "جاري تنفيذ القتل...", 3)
+
+        task.spawn(function()
+            pcall(function()
+                local player = LocalPlayer
+                local character = player.Character or player.CharacterAdded:Wait()
+                local humanoid = character:WaitForChild("Humanoid")
+                local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+                local originalPosition = humanoidRootPart.Position
+
+                humanoidRootPart.CFrame = CFrame.new(634.18, -4.00, 1839.65)
+                task.wait(0.5)
+
+                local args = {"PickingBoat", "MilitaryBoatFree"}
+                game:GetService("ReplicatedStorage"):WaitForChild("RE"):WaitForChild("1Ca1r"):FireServer(unpack(args))
+
+                local startTime = tick()
+                local seated = false
+                while tick() - startTime < 10 do
+                    local vehicle = workspace.Vehicles:FindFirstChild(player.Name .. "Car")
+                    if vehicle then
+                        local vehicleSeat = vehicle:FindFirstChild("VehicleSeat")
+                            or (vehicle:FindFirstChild("Body") and vehicle.Body:FindFirstChild("VehicleSeat"))
+                        if vehicleSeat then
+                            humanoidRootPart.CFrame = vehicleSeat.CFrame * CFrame.new(0, 2, 0)
+                            task.wait(0.2)
+                            firetouchinterest(humanoidRootPart, vehicleSeat, 0)
+                            firetouchinterest(humanoidRootPart, vehicleSeat, 1)
+                            task.wait(0.5)
+                            if humanoid.SeatPart == vehicleSeat then
+                                seated = true
+                                break
+                            end
+                        end
+                    end
+                    task.wait(0.5)
+                end
+
+                if not seated then
+                    Notify("خطأ", "ما قدرت اركب السفينة!", 3)
+                    return
+                end
+
+                local targetPlayer = game:GetService("Players"):FindFirstChild(killTarget)
+                if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local targetPos = targetPlayer.Character.HumanoidRootPart.Position
+                    local vehicle = workspace.Vehicles:FindFirstChild(player.Name .. "Car")
+                    if vehicle then
+                        vehicle:SetPrimaryPartCFrame(CFrame.new(targetPos + Vector3.new(0, -2, 0)))
+                        humanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 5, 0))
+
+                        local crazyStart = tick()
+                        while tick() - crazyStart < 2 do
+                            local offset = Vector3.new(math.random(-8, 8), math.random(-3, 1), math.random(-8, 8))
+                            vehicle:SetPrimaryPartCFrame(CFrame.new(targetPos + Vector3.new(0, -2, 0) + offset))
+                            task.wait(0.05)
+                        end
+                    end
+                end
+
+                local destination = Vector3.new(-86.00, -224.27, 34.57)
+                local vehicle = workspace.Vehicles:FindFirstChild(player.Name .. "Car")
+                if vehicle then
+                    vehicle:SetPrimaryPartCFrame(CFrame.new(destination))
+                    humanoidRootPart.CFrame = CFrame.new(destination + Vector3.new(0, 5, 0))
+                    task.wait(0.5)
+                    vehicle:Destroy()
+                end
+
+                humanoidRootPart.CFrame = CFrame.new(originalPosition)
+                humanoid:ChangeState(Enum.HumanoidStateType.RunningNoPhysics)
+                Notify("القتل", "تم تنفيذ القتل!", 3)
+            end)
+        end)
+    end
+})
+
+-- ========== تبويب تجسس ==========
+local SpyTab = Window:MakeTab({ Title = "تجسس", Icon = "rbxassetid://6031094672" })
+
+local currentSpyPlayer = nil
+local spyConnection = nil
+local autoSpyEnabled = false
+local selectedSpyPlayer = nil
+
+local function getSpyPlayerList()
+    local list = {}
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer then
+            table.insert(list, plr.Name)
+        end
+    end
+    return list
+end
+
+local function refreshSpyDropdown()
+    local newList = getSpyPlayerList()
+    if spyDropdown then
+        pcall(function()
+            if spyDropdown.SetOptions then spyDropdown:SetOptions(newList)
+            elseif spyDropdown.Set then spyDropdown:Set(newList)
+            elseif spyDropdown.Refresh then spyDropdown:Refresh(newList) end
+        end)
+        if selectedSpyPlayer and not Players:FindFirstChild(selectedSpyPlayer) then
+            selectedSpyPlayer = nil
+            pcall(function() if spyDropdown.SetValue then spyDropdown:SetValue("") end end)
+        end
+    end
+end
+
+local function startSpy(player)
+    if not player or not player.Character then return end
+    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return end
+    
+    if spyConnection then
+        spyConnection:Disconnect()
+        spyConnection = nil
+    end
+    
+    currentSpyPlayer = player
+    spyConnection = RunService.Heartbeat:Connect(function()
+        if currentSpyPlayer and currentSpyPlayer.Character then
+            local hum = currentSpyPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                workspace.CurrentCamera.CameraSubject = hum
+            else
+                stopSpy()
+            end
+        else
+            stopSpy()
+        end
+    end)
+end
+
+local function stopSpy()
+    if spyConnection then
+        spyConnection:Disconnect()
+        spyConnection = nil
+    end
+    currentSpyPlayer = nil
+    if LocalPlayer.Character then
+        local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if hum then
+            workspace.CurrentCamera.CameraSubject = hum
+        end
+    end
+end
+
+local spyDropdown = SpyTab:AddDropdown({
+    Name = "اختيار لاعب",
+    Options = getSpyPlayerList(),
+    Default = "",
+    Callback = function(value)
+        selectedSpyPlayer = value
+        print("[Spy] تم اختيار اللاعب: " .. tostring(value))
+    end
+})
+
+SpyTab:AddButton({
+    Name = "تحديث قائمة اللاعبين",
+    Callback = function()
+        refreshSpyDropdown()
+        print("[Spy] تم تحديث قائمة اللاعبين")
+    end
+})
+
+SpyTab:AddButton({
+    Name = "تجسس على المحدد",
+    Callback = function()
+        if not selectedSpyPlayer then
+            Notify("تجسس", "لم يتم اختيار لاعب!", 3)
+            return
+        end
+        local target = Players:FindFirstChild(selectedSpyPlayer)
+        if target then
+            if autoSpyEnabled then
+                autoSpyEnabled = false
+                if autoSpyToggle then
+                    pcall(function() if autoSpyToggle.Set then autoSpyToggle:Set(false) end end)
+                end
+            end
+            startSpy(target)
+            Notify("تجسس", "جاري تجسس على " .. target.Name, 3)
+        else
+            Notify("خطأ", "اللاعب غير موجود!", 3)
+        end
+    end
+})
+
+SpyTab:AddButton({
+    Name = "إيقاف التجسس",
+    Callback = function()
+        stopSpy()
+        autoSpyEnabled = false
+        if autoSpyToggle then
+            pcall(function() if autoSpyToggle.Set then autoSpyToggle:Set(false) end end)
+        end
+        Notify("تجسس", "تم إيقاف التجسس", 3)
+    end
+})
+
+local autoSpyToggle = SpyTab:AddToggle({
+    Name = "تجسس تلقائي (تناوب)",
+    CurrentValue = false,
+    Callback = function(value)
+        autoSpyEnabled = value
+        if value then
+            stopSpy()
+            Notify("تجسس", "بدء التجسس التلقائي (يتنقل بين اللاعبين)", 3)
+            task.spawn(function()
+                while autoSpyEnabled do
+                    local allPlayers = Players:GetPlayers()
+                    for _, player in pairs(allPlayers) do
+                        if not autoSpyEnabled then break end
+                        if player ~= LocalPlayer and player.Character then
+                            startSpy(player)
+                            local waitTime = 5
+                            while waitTime > 0 and autoSpyEnabled do
+                                task.wait(1)
+                                waitTime = waitTime - 1
+                            end
+                        end
+                    end
+                    if autoSpyEnabled then task.wait(1) end
+                end
+                stopSpy()
+            end)
+        else
+            stopSpy()
+            Notify("تجسس", "تم إيقاف التجسس التلقائي", 3)
+        end
+    end
+})
+
+Players.PlayerAdded:Connect(refreshSpyDropdown)
+Players.PlayerRemoved:Connect(refreshSpyDropdown)
+
+-- ========== تبويب نسخ سكنات ==========
+local CopyTab = Window:MakeTab({ Title = "نسخ سكنات", Icon = "rbxassetid://4483362458" })
+
+local Remotes = game:GetService("ReplicatedStorage"):WaitForChild("Remotes")
+local copyTarget = nil
+
+CopyTab:AddSection({ "اختار اللاعب" })
+
+CopyTab:AddTextBox({
+    Name = "اكتب اسم اللاعب",
+    PlaceholderText = "اكتب الاسم هنا...",
+    Callback = function(text)
+        local searchText = text:lower()
+        if #searchText >= 1 then
+            for _, p in pairs(Players:GetPlayers()) do
+                if p.Name:lower():find(searchText) and p ~= LocalPlayer then
+                    copyTarget = p
+                    Notify("نسخ سكنات", "تم تحديد: " .. p.Name, 3)
+                    return
+                end
+            end
+            Notify("خطأ", "اللاعب مو موجود!", 3)
+        end
+        copyTarget = nil
+    end
+})
+
+local function copyAvatar(TPlayer)
+    if not TPlayer or not TPlayer.Character then
+        Notify("خطأ", "اللاعب مو موجود!", 3)
+        return
+    end
+
+    local lp = LocalPlayer
+    local LChar = lp.Character
+    local LHumanoid = LChar and LChar:FindFirstChildOfClass("Humanoid")
+    local THumanoid = TPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if not LHumanoid or not THumanoid then return end
+
+    Notify("نسخ سكنات", "جاري النسخ...", 5)
+
+    task.spawn(function()
+        pcall(function()
+            local function wearId(id)
+                if id and tonumber(id) then
+                    Remotes.Wear:InvokeServer(tonumber(id))
+                end
+            end
+            local LDesc = LHumanoid:GetAppliedDescription()
+            for _, acc in ipairs(LDesc:GetAccessories(true)) do
+                if acc.AssetId then wearId(acc.AssetId); task.wait(0.1) end
+            end
+            if LDesc.Shirt then wearId(LDesc.Shirt); task.wait(0.1) end
+            if LDesc.Pants then wearId(LDesc.Pants); task.wait(0.1) end
+            if LDesc.Face then wearId(LDesc.Face); task.wait(0.1) end
+
+            local PDesc = THumanoid:GetAppliedDescription()
+            local argsBody = { [1] = {
+                PDesc.Torso, PDesc.RightArm, PDesc.LeftArm,
+                PDesc.RightLeg, PDesc.LeftLeg, PDesc.Head
+            } }
+            Remotes.ChangeCharacterBody:InvokeServer(unpack(argsBody))
+            task.wait(0.5)
+
+            if PDesc.Shirt then wearId(PDesc.Shirt); task.wait(0.1) end
+            if PDesc.Pants then wearId(PDesc.Pants); task.wait(0.1) end
+            if PDesc.Face then wearId(PDesc.Face); task.wait(0.1) end
+            for _, v in ipairs(PDesc:GetAccessories(true)) do
+                if v.AssetId then wearId(v.AssetId); task.wait(0.1) end
+            end
+
+            local SkinColor = TPlayer.Character:FindFirstChild("Body Colors")
+            if SkinColor then
+                Remotes.ChangeBodyColor:FireServer(tostring(SkinColor.HeadColor))
+                task.wait(0.1)
+            end
+
+            if PDesc.IdleAnimation and tonumber(PDesc.IdleAnimation) then
+                wearId(PDesc.IdleAnimation)
+                task.wait(0.2)
+            end
+
+            local Bag = TPlayer:FindFirstChild("PlayersBag")
+            if Bag then
+                if Bag:FindFirstChild("RPName") and Bag.RPName.Value ~= "" then
+                    Remotes.RPNameText:FireServer("RolePlayName", Bag.RPName.Value); task.wait(0.1)
+                end
+                if Bag:FindFirstChild("RPBio") and Bag.RPBio.Value ~= "" then
+                    Remotes.RPNameText:FireServer("RolePlayBio", Bag.RPBio.Value); task.wait(0.1)
+                end
+                if Bag:FindFirstChild("RPNameColor") then
+                    Remotes.RPNameColor:FireServer("PickingRPNameColor", Bag.RPNameColor.Value); task.wait(0.1)
+                end
+                if Bag:FindFirstChild("RPBioColor") then
+                    Remotes.RPNameColor:FireServer("PickingRPBioColor", Bag.RPBioColor.Value); task.wait(0.1)
+                end
+            end
+
+            Notify("نسخ سكنات", "تم النسخ بنجاح!", 3)
+        end)
+    end)
+end
+
+CopyTab:AddSection({ "خيارات النسخ" })
+
+CopyTab:AddButton({
+    Name = "انسخ سكنة اللاعب المحدد",
+    Callback = function()
+        if not copyTarget then
+            Notify("خطأ", "اختر لاعب اولاً!", 3)
+            return
+        end
+        copyAvatar(copyTarget)
+    end
+})
+
+CopyTab:AddButton({
+    Name = "انسخ سكنة اقرب لاعب",
+    Callback = function()
+        local lp = LocalPlayer
+        local LChar = lp.Character
+        if not LChar or not LChar:FindFirstChild("HumanoidRootPart") then return end
+        local closest, minDist = nil, math.huge
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                local dist = (LChar.HumanoidRootPart.Position - p.Character.HumanoidRootPart.Position).Magnitude
+                if dist < minDist then minDist = dist; closest = p end
+            end
+        end
+        if closest then
+            copyAvatar(closest)
+        else
+            Notify("خطأ", "ما في لاعبين قريبين!", 3)
+        end
+    end
+})
+
+CopyTab:AddButton({
+    Name = "انسخ سكنة عشوائية",
+    Callback = function()
+        local others = {}
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then table.insert(others, p) end
+        end
+        if #others == 0 then
+            Notify("خطأ", "ما في لاعبين!", 3)
+            return
+        end
+        copyAvatar(others[math.random(1, #others)])
+    end
+})
+
+-- ========== تبويب موسيقى للجميع (جديد) ==========
+local MusicAllTab = Window:MakeTab({ Title = "موسيقى للجميع", Icon = "rbxassetid://4483362458" })
+
+-- دالة لتشغيل الصوت لجميع اللاعبين
+local function playSoundForAll(soundId)
+    if not soundId or soundId == "" then return end
+    pcall(function()
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local hrp = player.Character.HumanoidRootPart
+                local args = {
+                    hrp, hrp,
+                    Vector3.new(0, -1, 0),
+                    Vector3.new(0, 0, 0),
+                    hrp, hrp,
+                    tostring(soundId), tostring(soundId),
+                    { true },
+                    { 25, Vector3.new(0.25, 0.25, 100), BrickColor.new(24), 0.25, Enum.Material.SmoothPlastic, 0.25 },
+                    true, false
+                }
+                local remote = ReplicatedStorage:FindFirstChild("RE")
+                if remote and remote:FindFirstChild("1Gu1n") then
+                    remote["1Gu1n"]:FireServer(unpack(args))
+                end
+            end
+        end
+    end)
+end
+
+-- قائمة الميمات (مترجمة)
+local memes = {
+    { name = "ضحكة ترول", id = "73753120048787" },
+    { name = "ترول فيس سوسي", id = "9098738774" },
+    { name = "تقطيع ترول", id = "8389041427" },
+    { name = "انتقال ترول", id = "7705506391" },
+    { name = "صوت ضرطة", id = "6454805792" },
+    { name = "رنة معدن 2", id = "9116788555" },
+    { name = "هنتاي ويااان", id = "88332347208779" },
+    { name = "ياميتي كوناساي", id = "108494476595033" },
+    { name = "توم جاك", id = "132603645477541" },
+    { name = "إيفود", id = "133843750864059" },
+    { name = "اخرج اغسل الصحون", id = "101232400175829" },
+    { name = "مواء", id = "131804436682424" },
+    { name = "سكيبيدي", id = "128771670035179" },
+    { name = "بيروليبي", id = "121569761604968" },
+    { name = "ضحكة رائعة", id = "127589011971759" },
+    { name = "جوومو جوومو نو!!!", id = "137067472449625" },
+    { name = "تجشؤ", id = "140203378050178" },
+    { name = "إشعار واتساب", id = "107004225739474" },
+    { name = "سامسونج", id = "123767635061073" },
+    { name = "شيش", id = "120566727202986" },
+    { name = "باص", id = "139841197791567" },
+    { name = "ها ها ها", id = "138236682866721" }
+}
+
+local memesNames = {}
+local memesMap = {}
+for _, m in ipairs(memes) do
+    table.insert(memesNames, m.name)
+    memesMap[m.name] = m.id
+end
+
+-- المتغيرات
+local globalSoundId = ""
+local globalLoopActive = false
+local selectedMeme = nil
+local memeLoopActive = false
+
+-- حقل إدخال معرف الصوت
+MusicAllTab:AddTextBox({
+    Name = "أدخل معرف الصوت",
+    PlaceholderText = "مثال: 1234567890",
+    Callback = function(text)
+        globalSoundId = tonumber(text)
+    end
+})
+
+-- زر تشغيل الصوت للجميع
+MusicAllTab:AddButton({
+    Name = "تشغيل الصوت للجميع",
+    Callback = function()
+        if globalSoundId then
+            playSoundForAll(globalSoundId)
+            local localSound = Instance.new("Sound")
+            localSound.Parent = workspace
+            localSound.SoundId = "rbxassetid://" .. globalSoundId
+            localSound.Volume = 3
+            localSound.Looped = false
+            localSound:Play()
+            task.delay(5, function() localSound:Destroy() end)
+            print("[Music] تم تشغيل الصوت: " .. globalSoundId)
+        end
+    end
+})
+
+-- تبديل التكرار العالمي
+MusicAllTab:AddToggle({
+    Name = "تكرار عالمي",
+    Default = false,
+    Callback = function(state)
+        globalLoopActive = state
+        if state then
+            task.spawn(function()
+                while globalLoopActive do
+                    if globalSoundId then
+                        playSoundForAll(globalSoundId)
+                        local localSound = Instance.new("Sound")
+                        localSound.Parent = workspace
+                        localSound.SoundId = "rbxassetid://" .. globalSoundId
+                        localSound.Volume = 3
+                        localSound.Looped = false
+                        localSound:Play()
+                        task.delay(5, function() localSound:Destroy() end)
+                    end
+                    task.wait(3)
+                end
+            end)
+        end
+    end
+})
+
+-- قسم الميمات
+MusicAllTab:AddSection({ "الميمات" })
+
+-- قائمة اختيار الميم
+MusicAllTab:AddDropdown({
+    Name = "اختر ميم",
+    Options = memesNames,
+    Callback = function(value)
+        selectedMeme = memesMap[value]
+    end
+})
+
+-- زر تشغيل الميم المحدد
+MusicAllTab:AddButton({
+    Name = "تشغيل الميم المحدد",
+    Callback = function()
+        if selectedMeme then
+            playSoundForAll(selectedMeme)
+            local localSound = Instance.new("Sound")
+            localSound.Parent = workspace
+            localSound.SoundId = "rbxassetid://" .. selectedMeme
+            localSound.Volume = 3
+            localSound.Looped = false
+            localSound:Play()
+            task.delay(5, function() localSound:Destroy() end)
+            print("[Music] تم تشغيل الميم: " .. selectedMeme)
+        end
+    end
+})
+
+-- تبديل تكرار الميم
+MusicAllTab:AddToggle({
+    Name = "تكرار الميم",
+    Default = false,
+    Callback = function(state)
+        memeLoopActive = state
+        if state then
+            task.spawn(function()
+                while memeLoopActive do
+                    if selectedMeme then
+                        playSoundForAll(selectedMeme)
+                        local localSound = Instance.new("Sound")
+                        localSound.Parent = workspace
+                        localSound.SoundId = "rbxassetid://" .. selectedMeme
+                        localSound.Volume = 3
+                        localSound.Looped = false
+                        localSound:Play()
+                        task.delay(5, function() localSound:Destroy() end)
+                    end
+                    task.wait(3)
+                end
+            end)
+        end
+    end
+})
+
+-- ========== أحداث إضافية ==========
+LocalPlayer.CharacterAdded:Connect(function()
+    print("تم تغيير الشخصية")
+    -- إعادة تعيين أي حالة نشطة
+    if headSitConnection then headSitConnection:Disconnect() headSitConnection = nil end
+    if spyConnection then spyConnection:Disconnect() spyConnection = nil end
+    if autoSpyEnabled then
+        autoSpyEnabled = false
+        if autoSpyToggle then pcall(function() if autoSpyToggle.Set then autoSpyToggle:Set(false) end end) end
+    end
+    if ClearAreaPhysics then ClearAreaPhysics:Disconnect() ClearAreaPhysics = nil end
+    if ClearAreaThread then task.cancel(ClearAreaThread) end
+    if antiBangVelConn then antiBangVelConn:Disconnect() end
+    ClearAreaEnabled = false
+    antiBangActive = false
+end)
